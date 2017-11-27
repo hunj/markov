@@ -4,7 +4,7 @@
 require 'pp'
 
 class Markov
-  attr_accessor :max_chain_length, :tokens, :raw_mapping
+  attr_accessor :max_chain_length, :tokens, :raw_mapping, :mapping
 
   def initialize(text, opts = {})
     raise ArgumentError.new("invalid chain length") if opts[:max_chain_length] < 1
@@ -26,6 +26,7 @@ class Markov
     @tokens = extract_words_from text
     @max_chain_length = opts[:max_chain_length] || 3
     build_mapping_with_markov_length @tokens, @max_chain_length
+    normalize_mapping
   end
 
   # Returns the contents of the file, split into a list of words and punctuations.
@@ -74,10 +75,18 @@ class Markov
         add_to_raw_mapping history, follow
       end
     end
+  end
 
-    # TODO: normalize @raw_mapping to @mapping
-    #
-    #
+  def normalize_mapping
+    # normalize @raw_mapping frequencies into @mapping
+    @raw_mapping.each do |token, frequencies|
+      total = frequencies.values.sum
+      @mapping[token] = {}
+      frequencies.each do |next_token, frequency|
+        @mapping[token][next_token] = frequency / total
+      end
+    end
+    @mapping
   end
 
   # TODO: We want to be able to compare words independent of their capitalization.
